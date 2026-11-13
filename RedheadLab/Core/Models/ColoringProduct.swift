@@ -4,18 +4,15 @@
 //
 //  Created by Viviane Fernandes on 12/11/26.
 //
+
 import Foundation
 
 struct ColoringProduct: Identifiable {
     let id: UUID
-    let brand: String // marca/fabricante
-    let name: String // linha ou nome comercial
-    var shade: String? // tonalidade ou numeração da cor
-    let type: ProductType // tipo do produto
-    let quantity: Double // quantidade usada na fórmula
-    let unit: MeasurementUnit // unidade de medida da quanridade
-    var oxidantVolume: Int? // volumagem da OX
-    
+    let product: Product // Produto utilizado na receita
+    let quantity: Double // Quantidade utilizada
+    let unit: MeasurementUnit // Unidade de medida
+    var oxidantVolume: Int? // Volumagem do oxidante, quando aplicável
 }
 
 enum ProductType {
@@ -24,5 +21,4 @@ enum ProductType {
     case oxidant
     case other
 }
-
 
