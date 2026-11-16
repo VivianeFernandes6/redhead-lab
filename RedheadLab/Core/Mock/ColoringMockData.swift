@@ -13,6 +13,10 @@ enum ColoringMockData {
 
     // MARK: - Products
 
+    static var products: [Product] {
+        [koleston, majirel, welloxon, raposinha, desejo]
+    }
+
     static let koleston = Product(
         id: UUID(),
         brand: "Wella",
