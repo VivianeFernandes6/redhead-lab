@@ -13,6 +13,8 @@ final class HomeViewController: UIViewController {
     private let saveButton = UIButton(type: .system)
     private let viewButton = UIButton(type: .system)
     private let contentStackView = UIStackView()
+    private var colorings = ColoringMockData.colorings
+    private var products = ColoringMockData.products
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -35,6 +37,7 @@ final class HomeViewController: UIViewController {
         titleLabel.translatesAutoresizingMaskIntoConstraints = false
 
         saveButton.setTitle("Guardar", for: .normal)
+        saveButton.addTarget(self, action: #selector(showColoringForm), for: .touchUpInside)
         saveButton.translatesAutoresizingMaskIntoConstraints = false
 
         viewButton.setTitle("Ver", for: .normal)
@@ -63,8 +66,23 @@ final class HomeViewController: UIViewController {
     }
 
     @objc private func showColoringHistory() {
-        let historyViewController = ColoringHistoryViewController()
+        let historyViewController = ColoringHistoryViewController(colorings: colorings)
         let navigationController = UINavigationController(rootViewController: historyViewController)
+        navigationController.modalPresentationStyle = .fullScreen
+        present(navigationController, animated: true)
+    }
+
+    @objc private func showColoringForm() {
+        let formViewController = ColoringFormViewController(products: products)
+        formViewController.onProductCreated = { [weak self] product in
+            self?.products.append(product)
+        }
+        formViewController.onSave = { [weak self] coloring in
+            self?.colorings.insert(coloring, at: 0)
+            self?.dismiss(animated: true)
+        }
+
+        let navigationController = UINavigationController(rootViewController: formViewController)
         navigationController.modalPresentationStyle = .fullScreen
         present(navigationController, animated: true)
     }
