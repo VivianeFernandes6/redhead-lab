@@ -131,3 +131,7 @@ final class NewProductViewController: UIViewController {
         navigationController?.dismiss(animated: true)
     }
 }
+
+#Preview("New Product Form") {
+    UINavigationController(rootViewController: NewProductViewController())
+}
