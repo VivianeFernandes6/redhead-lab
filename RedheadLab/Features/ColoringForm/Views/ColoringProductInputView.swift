@@ -2,7 +2,7 @@ import UIKit
 
 final class ColoringProductInputView: UIView {
 
-    let id = UUID()
+    let id: UUID
     let product: Product
     var onRemove: (() -> Void)?
 
@@ -10,10 +10,19 @@ final class ColoringProductInputView: UIView {
     private let unitControl = UISegmentedControl(items: ["g", "ml", "un"])
     private let oxidantVolumeTextField = UITextField()
 
-    init(product: Product) {
-        self.product = product
+    init(product: Product, coloringProduct: ColoringProduct? = nil) {
+        id = coloringProduct?.id ?? UUID()
+        self.product = coloringProduct?.product ?? product
         super.init(frame: .zero)
         setupView()
+
+        if let coloringProduct {
+            quantityTextField.text = coloringProduct.quantity.formatted(
+                .number.locale(Locale(identifier: "pt_BR"))
+            )
+            unitControl.selectedSegmentIndex = unitIndex(for: coloringProduct.unit)
+            oxidantVolumeTextField.text = coloringProduct.oxidantVolume.map(String.init)
+        }
     }
 
     required init?(coder: NSCoder) {
@@ -106,6 +115,14 @@ final class ColoringProductInputView: UIView {
         case .oxidant: return 1
         case .other: return 2
         case .permanentDye, .semiPermanentDye: return 0
+        }
+    }
+
+    private func unitIndex(for unit: MeasurementUnit) -> Int {
+        switch unit {
+        case .grams: return 0
+        case .milliliters: return 1
+        case .units: return 2
         }
     }
 

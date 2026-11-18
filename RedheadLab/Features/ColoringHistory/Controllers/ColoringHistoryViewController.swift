@@ -9,7 +9,7 @@ final class ColoringHistoryViewController: UIViewController {
 
     var onColoringSelected: ((Coloring) -> Void)?
 
-    private let colorings: [Coloring]
+    private var colorings: [Coloring]
     private let collectionView: UICollectionView = {
         let layout = UICollectionViewFlowLayout()
         layout.minimumInteritemSpacing = 12
@@ -37,6 +37,16 @@ final class ColoringHistoryViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupView()
+    }
+
+    func updateColoring(_ coloring: Coloring) {
+        guard let index = colorings.firstIndex(where: { $0.id == coloring.id }) else {
+            return
+        }
+
+        colorings[index] = coloring
+        colorings.sort { $0.date > $1.date }
+        collectionView.reloadData()
     }
 
     private func setupView() {
