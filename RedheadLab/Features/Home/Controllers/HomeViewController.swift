@@ -139,9 +139,31 @@ final class HomeViewController: UIViewController { // HomeViewController herda d
 
         // Quando uma coloração for selecionada no histórico,
         // abre os detalhes dentro da mesma pilha de navegação.
-        historyViewController.onColoringSelected = { [weak historyViewController] coloring in
-            let detailViewController = ColoringDetailViewController(coloring: coloring)
-            historyViewController?.navigationController?.pushViewController(
+        historyViewController.onColoringSelected = { [weak self, weak historyViewController] coloring in
+            guard let self, let historyViewController else {
+                return
+            }
+
+            let detailViewController = ColoringDetailViewController(
+                coloring: coloring,
+                products: self.products
+            )
+
+            detailViewController.onColoringUpdated = { [weak self, weak historyViewController] updatedColoring in
+                guard let self,
+                      let coloringIndex = self.colorings.firstIndex(where: { $0.id == updatedColoring.id }) else {
+                    return
+                }
+
+                self.colorings[coloringIndex] = updatedColoring
+                historyViewController?.updateColoring(updatedColoring)
+            }
+
+            detailViewController.onProductCreated = { [weak self] product in
+                self?.products.append(product)
+            }
+
+            historyViewController.navigationController?.pushViewController(
                 detailViewController,
                 animated: true
             )

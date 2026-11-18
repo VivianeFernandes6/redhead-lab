@@ -7,9 +7,12 @@ import UIKit
 
 final class ColoringDetailViewController: UIViewController {
 
-    private let coloring: Coloring
+    private var coloring: Coloring
+    private var availableProducts: [Product]
     private let scrollView = UIScrollView()
     private let contentStackView = UIStackView()
+    var onColoringUpdated: ((Coloring) -> Void)?
+    var onProductCreated: ((Product) -> Void)?
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "pt_BR")
@@ -18,8 +21,9 @@ final class ColoringDetailViewController: UIViewController {
         return formatter
     }()
 
-    init(coloring: Coloring) {
+    init(coloring: Coloring, products: [Product] = ColoringMockData.products) {
         self.coloring = coloring
+        availableProducts = products
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -35,6 +39,12 @@ final class ColoringDetailViewController: UIViewController {
     private func setupView() {
         title = "Detalhes da coloração"
         view.backgroundColor = .systemBackground
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: "Editar",
+            style: .plain,
+            target: self,
+            action: #selector(editColoring)
+        )
 
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentStackView.translatesAutoresizingMaskIntoConstraints = false
@@ -58,6 +68,10 @@ final class ColoringDetailViewController: UIViewController {
             contentStackView.widthAnchor.constraint(equalTo: scrollView.frameLayoutGuide.widthAnchor, constant: -40)
         ])
 
+        populateContent()
+    }
+
+    private func populateContent() {
         contentStackView.addArrangedSubview(makeSection(title: "Data", body: dateFormatter.string(from: coloring.date)))
         contentStackView.addArrangedSubview(makeHairBaseSection())
         contentStackView.addArrangedSubview(makeProductsSection())
@@ -75,6 +89,44 @@ final class ColoringDetailViewController: UIViewController {
         if let notes = coloring.notes, !notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             contentStackView.addArrangedSubview(makeSection(title: "Observações", body: notes))
         }
+    }
+
+    @objc private func editColoring() {
+        let formViewController = ColoringFormViewController(
+            products: availableProducts,
+            coloringToEdit: coloring
+        )
+
+        formViewController.onProductCreated = { [weak self] product in
+            guard let self else {
+                return
+            }
+
+            availableProducts.append(product)
+            onProductCreated?(product)
+        }
+
+        formViewController.onSave = { [weak self] updatedColoring in
+            guard let self else {
+                return
+            }
+
+            coloring = updatedColoring
+            refreshContent()
+            onColoringUpdated?(updatedColoring)
+            navigationController?.popViewController(animated: true)
+        }
+
+        navigationController?.pushViewController(formViewController, animated: true)
+    }
+
+    private func refreshContent() {
+        for arrangedSubview in contentStackView.arrangedSubviews {
+            contentStackView.removeArrangedSubview(arrangedSubview)
+            arrangedSubview.removeFromSuperview()
+        }
+
+        populateContent()
     }
 
     private func makeHairBaseSection() -> UIView {

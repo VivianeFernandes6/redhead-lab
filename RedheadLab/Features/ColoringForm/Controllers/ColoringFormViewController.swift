@@ -65,6 +65,9 @@ final class ColoringFormViewController: UIViewController {
     // Ela é recebida pelo inicializador.
     private var availableProducts: [Product]
 
+    // Quando não é nil, o formulário está editando esta coloração.
+    private let coloringToEdit: Coloring?
+
     // Guarda os dados das fotografias selecionadas.
     // Data representa bytes, ou seja, os dados binários da imagem.
     private var photos: [Data] = []
@@ -75,13 +78,15 @@ final class ColoringFormViewController: UIViewController {
     private var regionInputs: [RegionInput] = []
 
     // Inicializador personalizado.
-    // Recebe os produtos disponíveis.
-    // Se ninguém passar uma lista, usa os produtos mockados.
-    init(products: [Product] = ColoringMockData.products) {
+    // Recebe os produtos disponíveis e, opcionalmente,
+    // a coloração que será editada.
+    init(products: [Product] = ColoringMockData.products, coloringToEdit: Coloring? = nil) {
 
         // Copia a lista recebida para a propriedade availableProducts
         // desta instância.
         availableProducts = products
+        self.coloringToEdit = coloringToEdit
+        photos = coloringToEdit?.photos ?? []
 
         // Chama o inicializador da classe pai UIViewController.
         // nil/nil indica que não estamos carregando a tela
@@ -121,7 +126,7 @@ final class ColoringFormViewController: UIViewController {
         // Define o título associado a este controller.
         // Quando ele está dentro de um UINavigationController,
         // esse título aparece na barra de navegação.
-        title = "Nova coloração"
+        title = coloringToEdit == nil ? "Nova coloração" : "Editar coloração"
 
         // Define o fundo da view principal.
         // .systemBackground se adapta ao modo claro/escuro do iOS.
@@ -166,6 +171,10 @@ final class ColoringFormViewController: UIViewController {
         // Monta a composição do formulário,
         // adicionando campos e seções às stacks.
         buildForm()
+
+        // No modo de edição, carrega nos controles
+        // os valores que já pertencem à coloração.
+        populateFieldsIfEditing()
 
         // Desativa a tradução automática da autoresizing mask
         // em constraints.
@@ -384,7 +393,10 @@ final class ColoringFormViewController: UIViewController {
 
             // Cria um objeto auxiliar RegionInput para a região atual.
             // Ele guarda os campos e a condição escolhida para essa região.
-            let input = RegionInput(region: region)
+            let initialCondition = coloringToEdit?.hairBase.regions.first {
+                $0.region == region
+            }
+            let input = RegionInput(region: region, initialCondition: initialCondition)
 
             // Guarda esse objeto no array para recuperar os dados
             // posteriormente, quando o usuário salvar.
@@ -699,6 +711,23 @@ final class ColoringFormViewController: UIViewController {
         // e permite preencher seus detalhes.
         let row = ColoringProductInputView(product: product)
 
+        addProductRow(row)
+    }
+
+    // Cria uma linha já preenchida com os dados de um produto
+    // que pertence à coloração em edição.
+    private func appendProduct(_ coloringProduct: ColoringProduct) {
+        let row = ColoringProductInputView(
+            product: coloringProduct.product,
+            coloringProduct: coloringProduct
+        )
+
+        addProductRow(row)
+    }
+
+    // Conecta uma linha de produto ao array e à stack da interface.
+    private func addProductRow(_ row: ColoringProductInputView) {
+
         // Define o que fazer quando o usuário pedir para remover esta linha.
         //
         // [weak self, weak row] captura ambos por referências fracas,
@@ -776,6 +805,24 @@ final class ColoringFormViewController: UIViewController {
             ? "Nenhuma fotografia selecionada"
             : "\(photos.count) fotografia(s) selecionada(s)"
     }
+
+    // Copia os dados do registro existente para os controles do formulário.
+    private func populateFieldsIfEditing() {
+        guard let coloringToEdit else {
+            return
+        }
+
+        datePicker.setDate(coloringToEdit.date, animated: false)
+        mixingRatioTextField.text = coloringToEdit.mixingRatio
+        applicationTimeTextField.text = String(coloringToEdit.applicationTime)
+        notesTextView.text = coloringToEdit.notes
+
+        for coloringProduct in coloringToEdit.products {
+            appendProduct(coloringProduct)
+        }
+
+        updatePhotosCount()
+    }
     // Método chamado quando o usuário toca no botão Salvar.
     @objc private func saveColoring() {
 
@@ -851,15 +898,15 @@ final class ColoringFormViewController: UIViewController {
             regions: regionInputs.map {
                 $0.makeCondition()
             },
-            photo: nil
+            photo: coloringToEdit?.hairBase.photo
         )
 
         // Cria o objeto Coloring com todas as informações
         // preenchidas pelo usuário no formulário.
         let coloring = Coloring(
 
-            // Gera um identificador único para esta coloração.
-            id: UUID(),
+            // Mantém o identificador ao editar; cria um novo no cadastro.
+            id: coloringToEdit?.id ?? UUID(),
 
             // Obtém a data selecionada no UIDatePicker.
             date: datePicker.date,
@@ -954,13 +1001,18 @@ final class ColoringFormViewController: UIViewController {
         // Campo para observações específicas desta região.
         private let notesTextField = UITextField()
 
+        // Valores existentes da região, usados no modo de edição.
+        private let initialCondition: HairRegionCondition?
+
         // Inicializa esta entrada recebendo a região que ela representará.
-        init(region: HairRegion) {
+        init(region: HairRegion, initialCondition: HairRegionCondition? = nil) {
 
             // self.region é a propriedade da instância.
             // region é o parâmetro recebido.
             // Atribuímos o parâmetro à propriedade.
             self.region = region
+            self.initialCondition = initialCondition
+            selectedCondition = initialCondition?.condition ?? .natural
         }
 
         // Constrói os componentes visuais desta região
@@ -978,7 +1030,7 @@ final class ColoringFormViewController: UIViewController {
 
             // Define o texto inicial do botão,
             // indicando que a condição inicial é Natural.
-            conditionButton.setTitle("Natural ▾", for: .normal)
+            conditionButton.setTitle("\(conditionTitle(for: selectedCondition)) ▾", for: .normal)
 
             // Alinha o texto do botão à esquerda.
             conditionButton.contentHorizontalAlignment = .leading
@@ -1037,6 +1089,10 @@ final class ColoringFormViewController: UIViewController {
                     }
                 }
             )
+
+            levelTextField.text = initialCondition?.level.map(String.init)
+            undertoneTextField.text = initialCondition?.undertone
+            notesTextField.text = initialCondition?.notes
 
             // Dica exibida no campo de altura do tom.
             levelTextField.placeholder = "Altura do tom"
@@ -1145,6 +1201,16 @@ final class ColoringFormViewController: UIViewController {
             // Se for pontas, devolve "Pontas".
             case .ends:
                 return "Pontas"
+            }
+        }
+
+        private func conditionTitle(for condition: HairCondition) -> String {
+            switch condition {
+            case .natural: return "Natural"
+            case .colored: return "Colorido"
+            case .bleached: return "Descolorido"
+            case .virgin: return "Virgem"
+            case .other: return "Outro"
             }
         }
     }
