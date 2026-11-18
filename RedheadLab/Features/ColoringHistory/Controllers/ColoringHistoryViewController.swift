@@ -133,9 +133,9 @@ extension ColoringHistoryViewController: UICollectionViewDelegateFlowLayout {
 }
 
 #Preview("Coloring History") {
-    ColoringHistoryViewController()
+    UINavigationController(rootViewController: ColoringHistoryViewController())
 }
 
 #Preview("Empty Coloring History") {
-    ColoringHistoryViewController(colorings: [])
+    UINavigationController(rootViewController: ColoringHistoryViewController(colorings: []))
 }
