@@ -159,6 +159,15 @@ final class HomeViewController: UIViewController { // HomeViewController herda d
                 historyViewController?.updateColoring(updatedColoring)
             }
 
+            detailViewController.onColoringDeleted = { [weak self, weak historyViewController] coloringID in
+                guard let self else {
+                    return
+                }
+
+                self.colorings.removeAll { $0.id == coloringID }
+                historyViewController?.removeColoring(withID: coloringID)
+            }
+
             detailViewController.onProductCreated = { [weak self] product in
                 self?.products.append(product)
             }

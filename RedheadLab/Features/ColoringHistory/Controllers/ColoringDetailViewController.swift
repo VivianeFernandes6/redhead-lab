@@ -12,6 +12,7 @@ final class ColoringDetailViewController: UIViewController {
     private let scrollView = UIScrollView()
     private let contentStackView = UIStackView()
     var onColoringUpdated: ((Coloring) -> Void)?
+    var onColoringDeleted: ((UUID) -> Void)?
     var onProductCreated: ((Product) -> Void)?
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -39,12 +40,19 @@ final class ColoringDetailViewController: UIViewController {
     private func setupView() {
         title = "Detalhes da coloração"
         view.backgroundColor = .systemBackground
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
+        let editButton = UIBarButtonItem(
             title: "Editar",
             style: .plain,
             target: self,
             action: #selector(editColoring)
         )
+        let deleteButton = UIBarButtonItem(
+            barButtonSystemItem: .trash,
+            target: self,
+            action: #selector(confirmDeletion)
+        )
+        deleteButton.accessibilityLabel = "Excluir coloração"
+        navigationItem.rightBarButtonItems = [deleteButton, editButton]
 
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         contentStackView.translatesAutoresizingMaskIntoConstraints = false
@@ -118,6 +126,25 @@ final class ColoringDetailViewController: UIViewController {
         }
 
         navigationController?.pushViewController(formViewController, animated: true)
+    }
+
+    @objc private func confirmDeletion() {
+        let alert = UIAlertController(
+            title: "Excluir coloração?",
+            message: "Esta ação não pode ser desfeita.",
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "Cancelar", style: .cancel))
+        alert.addAction(UIAlertAction(title: "Excluir", style: .destructive) { [weak self] _ in
+            guard let self else {
+                return
+            }
+
+            onColoringDeleted?(coloring.id)
+            navigationController?.popViewController(animated: true)
+        })
+
+        present(alert, animated: true)
     }
 
     private func refreshContent() {

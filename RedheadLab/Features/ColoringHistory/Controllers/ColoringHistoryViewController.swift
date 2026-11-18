@@ -49,6 +49,16 @@ final class ColoringHistoryViewController: UIViewController {
         collectionView.reloadData()
     }
 
+    func removeColoring(withID id: UUID) {
+        guard let index = colorings.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+
+        colorings.remove(at: index)
+        collectionView.backgroundView = colorings.isEmpty ? makeEmptyStateView() : nil
+        collectionView.reloadData()
+    }
+
     private func setupView() {
         title = "Histórico de Colorações"
         view.backgroundColor = .systemBackground
