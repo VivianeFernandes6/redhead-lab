@@ -1288,6 +1288,4 @@ private extension String {
     }
 }
 
-#Preview("Coloring Form") {
-    UINavigationController(rootViewController: ColoringFormViewController())
-}
+
